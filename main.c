@@ -1,8 +1,10 @@
 #include "xtuiapi.h"   /* xapi_* / WSTR；libsys.h：enter_syscall / XAPI_INPUT_NO_ECHO */
 
-#define SHELL          "/apps/system/xsh.elf"
+#define DEFAULT_SHELL  "/apps/system/lpsh.elf"
 #define OOBE_PATH      "/apps/leopard/leopard-oobe.elf"
 #define USER_CAP       64
+#define CONFIG_CAP     512
+#define PATH_CAP       256
 
 static inline void read_line(char *buf, size_t cap, uint64_t flags)
 {
@@ -16,6 +18,45 @@ static inline void wipe(char *buf, size_t n)
 {
     while (n-- > 0)
         buf[n] = '\0';
+}
+
+/* 从 /users/<用户名>/config 读取 shell= 的值；读不到则回退 DEFAULT_SHELL */
+static void resolve_shell(const char *username, char *out, size_t out_cap)
+{
+    strncpy(out, DEFAULT_SHELL, out_cap - 1);
+    out[out_cap - 1] = '\0';
+
+    char config_path[PATH_CAP];
+    snprintf(config_path, sizeof(config_path), "/users/%s/config", username);
+
+    char buf[CONFIG_CAP];
+    memset(buf, 0, sizeof(buf));
+    int64_t n = (int64_t)xapi_ReadFile((WSTR)config_path, buf, sizeof(buf) - 1, 0);
+    if (n <= 0)
+        return;
+
+    char *line = buf;
+    while (*line != '\0') {
+        char *eol = strchr(line, '\n');
+        if (eol != NULL)
+            *eol = '\0';
+
+        if (strncmp(line, "shell=", 6) == 0) {
+            char *val = line + 6;
+            size_t len = strlen(val);
+            while (len > 0 && (val[len - 1] == '\r' || val[len - 1] == ' ' || val[len - 1] == '\t'))
+                val[--len] = '\0';
+            if (len > 0) {
+                strncpy(out, val, out_cap - 1);
+                out[out_cap - 1] = '\0';
+            }
+            return;
+        }
+
+        if (eol == NULL)
+            break;
+        line = eol + 1;
+    }
 }
 
 int main(int argc, char *argv[], char *envp[])
@@ -61,10 +102,13 @@ int main(int argc, char *argv[], char *envp[])
             xapi_Printf("Login failed.\n");
         } while (result != 0);
 
-        /* 进入会话：exec 成功则不返回 */
-        WSTR argv[2] = { (WSTR)SHELL, NULL };
+        /* 根据配置的 shell 变量进入会话：exec 成功则不返回 */
+        char shell[PATH_CAP];
+        resolve_shell(username, shell, sizeof(shell));
+
+        WSTR argv[2] = { (WSTR)shell, NULL };
         WSTR envp[1] = { NULL };
-        xapi_Execve((WSTR)SHELL, argv, envp);
+        xapi_Execve((WSTR)shell, argv, envp);
 
         xapi_Printf("LeopardGetty: session start failed\n");
         xapi_Sleep(2000);
