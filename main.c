@@ -1,4 +1,5 @@
-#include "xtuiapi.h"   /* xapi_* / WSTR；libsys.h：enter_syscall */
+#include "xtuiapi.h"
+#include "libsys.h"   /* xapi_* / WSTR；libsys.h：enter_syscall */
 
 /* XACT 2026v5 头文件删除了该宏，但内核 XAPI_INPUT 仍支持 flags=0x1（不回显）。 */
 #ifndef XAPI_INPUT_NO_ECHO
@@ -57,7 +58,10 @@ int main(int argc, char *argv[], char *envp[])
                         xapi_Printf("Password: ");
                         read_line(password, sizeof(password), XAPI_INPUT_NO_ECHO);
 
-                        result = (int64_t)xapi_UserLogin((WSTR)username, (WSTR)password);
+                        /* 官方 SDK 的 xapi_UserLogin 走 xauth/mbedtls；Leopard 内核实现的是
+		 * XAPI_USER_LOGIN 原语，直接调用 syscall 保持行为一致。 */
+		result = (int64_t)enter_syscall(XAPI_USER_LOGIN, (uint64_t)username,
+		                                (uint64_t)password, 0, 0, 0, 0);
                         wipe(password, sizeof(password));
 
                         if (!result) break;
