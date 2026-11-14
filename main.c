@@ -1,5 +1,6 @@
 #include "xtuiapi.h"
 #include "libsys.h"   /* xapi_* / WSTR；libsys.h：enter_syscall */
+#include "console_lock.h"
 
 /* XACT 2026v5 头文件删除了该宏，但内核 XAPI_INPUT 仍支持 flags=0x1（不回显）。 */
 #ifndef XAPI_INPUT_NO_ECHO
@@ -34,6 +35,11 @@ int main(int argc, char *argv[], char *envp[])
         (void)argc;
         (void)argv;
         (void)envp;
+
+        if (console_lock_is_busy()) {
+                xapi_Printf("LeopardGetty: console already in use\n");
+                return 1;
+        }
 
         xapi_Printf("LeopardGetty: console login\n");
 
