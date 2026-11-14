@@ -36,13 +36,9 @@ int main(int argc, char *argv[], char *envp[])
                         continue;
                 }
 
-                /* 登录：getty 先成为 XTTTP 终端，登录输入走自己的 sink。
-                 * 如果已经有终端祖先（例如从 lpsh 里再次运行 getty），
-                 * 拒绝接管焦点并退出，避免把外层会话的输入 sink 抢走。 */
-                if (getty_mark_terminal() != 0) {
-                        xapi_Printf("getty: already inside a terminal session\n");
-                        xapi_Exit(1);
-                }
+                /* 登录：getty 先成为 XTTTP 终端，登录输入走自己的 sink，
+                 * 不再使用 XAPI_INPUT 的无终端 raw-keyboard 分支。 */
+                getty_mark_terminal();
 
                 char  username[USER_CAP];
                 char  password[USER_CAP];
