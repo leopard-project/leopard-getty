@@ -13,7 +13,7 @@
 #define XTTTP_INPUT_STATUS_NO_ECHO 0x2
 
 /* Mark this process group as the XTTTP terminal and own its sink. */
-void getty_mark_terminal(void);
+int getty_mark_terminal(void);
 
 /* Read one line from the XTTTP sink (getty is the terminal owner).  Used for
  * login so username/password never take the legacy raw-keyboard path. */

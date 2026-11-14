@@ -33,9 +33,9 @@ static void feed_line(const char *line, size_t length)
         enter_syscall(SXAH_WRITE_INPUT_BUFFER, (uint64_t)buffer, 0, 0, 0, 0, 0);
 }
 
-void getty_mark_terminal(void)
+int getty_mark_terminal(void)
 {
-        enter_syscall(SXAH_MARK_IS_TERMINAL, 0, 0, 0, 0, 0, 0);
+        return (int)(int64_t)enter_syscall(SXAH_MARK_IS_TERMINAL, 0, 0, 0, 0, 0, 0);
 }
 
 int getty_read_line(const char *prompt, char *out, size_t cap, int no_echo)
