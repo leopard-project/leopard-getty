@@ -12,6 +12,12 @@
 #define XTTTP_INPUT_STATUS_WAITING 0x1
 #define XTTTP_INPUT_STATUS_NO_ECHO 0x2
 
-/* Login succeeded: become the console host, run the shell, and stay alive
- * until the shell exits.  Returns 0 if the session terminated normally. */
+/* Mark this process group as the XTTTP terminal and own its sink. */
+void getty_mark_terminal(void);
+
+/* Read one line from the XTTTP sink (getty is the terminal owner).  Used for
+ * login so username/password never take the legacy raw-keyboard path. */
+int getty_read_line(const char *prompt, char *out, size_t cap, int no_echo);
+
+/* Login succeeded: run the shell and stay alive until it exits. */
 int getty_run_session(const char *shell, WSTR envp[]);

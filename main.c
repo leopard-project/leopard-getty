@@ -2,11 +2,6 @@
 #include "libsys.h"   /* xapi_* / WSTR；libsys.h：enter_syscall */
 #include "console_host.h"
 
-/* XACT 2026v5 头文件删除了该宏，但内核 XAPI_INPUT 仍支持 flags=0x1（不回显）。 */
-#ifndef XAPI_INPUT_NO_ECHO
-#define XAPI_INPUT_NO_ECHO 0x1
-#endif
-
 #define DEFAULT_SHELL  "/apps/system/lpsh.elf"
 #define OOBE_PATH      "/apps/leopard/leopard-oobe.elf"
 #define USER_CAP       64
@@ -14,14 +9,6 @@
 #define PATH_CAP       256
 
 static void resolve_shell(const char *, char *, size_t);
-
-static inline void read_line(char *buf, size_t cap, uint64_t flags)
-{
-        if (buf == NULL || cap == 0)
-                return;
-        buf[0] = '\0';
-        enter_syscall(XAPI_INPUT, (uint64_t)buf, (uint64_t)cap, flags, 0, 0, 0);
-}
 
 static inline void wipe(char *buf, size_t n)
 {
@@ -49,15 +36,16 @@ int main(int argc, char *argv[], char *envp[])
                         continue;
                 }
 
-                /* 登录：成功才继续 */
+                /* 登录：getty 先成为 XTTTP 终端，登录输入走自己的 sink，
+                 * 不再使用 XAPI_INPUT 的无终端 raw-keyboard 分支。 */
+                getty_mark_terminal();
+
                 char  username[USER_CAP];
                 char  password[USER_CAP];
                 int64_t result;
                 do {
-                        xapi_Printf("Username: ");
-                        read_line(username, sizeof(username), 0);
-                        xapi_Printf("Password: ");
-                        read_line(password, sizeof(password), XAPI_INPUT_NO_ECHO);
+                        getty_read_line("Username: ", username, sizeof(username), 0);
+                        getty_read_line("Password: ", password, sizeof(password), 1);
 
                         /* 官方 SDK 的 xapi_UserLogin 走 xauth/mbedtls；Leopard 内核实现的是
 		 * XAPI_USER_LOGIN 原语，直接调用 syscall 保持行为一致。 */

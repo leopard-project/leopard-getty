@@ -33,6 +33,44 @@ static void feed_line(const char *line, size_t length)
         enter_syscall(SXAH_WRITE_INPUT_BUFFER, (uint64_t)buffer, 0, 0, 0, 0, 0);
 }
 
+void getty_mark_terminal(void)
+{
+        enter_syscall(SXAH_MARK_IS_TERMINAL, 0, 0, 0, 0, 0, 0);
+}
+
+int getty_read_line(const char *prompt, char *out, size_t cap, int no_echo)
+{
+        size_t length = 0;
+
+        if (out == NULL || cap == 0) return -1;
+        out[0] = '\0';
+        if (prompt != NULL) console_write(prompt);
+
+        for (;;) {
+                char ch = xapi_Getch();
+
+                if (ch == '\n' || ch == '\r') {
+                        if (!no_echo) console_write("\n");
+                        out[length] = '\0';
+                        return 0;
+                }
+                if (ch == '\b' || ch == 127) {
+                        if (length > 0) {
+                                length--;
+                                if (!no_echo) console_write("\b \b");
+                        }
+                        continue;
+                }
+                if (ch >= 32 && ch < 127 && length < cap - 1) {
+                        out[length++] = ch;
+                        if (!no_echo) {
+                                char echo[2] = { ch, '\0' };
+                                console_write(echo);
+                        }
+                }
+        }
+}
+
 int getty_run_session(const char *shell, WSTR envp[])
 {
         WSTR argv[2] = { (WSTR)shell, NULL };
@@ -40,8 +78,6 @@ int getty_run_session(const char *shell, WSTR envp[])
         char line[LINE_CAP];
         size_t length = 0;
         const int no_hang = 1;
-
-        enter_syscall(SXAH_MARK_IS_TERMINAL, 0, 0, 0, 0, 0, 0);
 
         pid = (int64_t)xapi_Fork();
         if (pid < 0) return -1;
