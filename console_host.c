@@ -17,7 +17,9 @@
 static void console_write(const char *text)
 {
         if (text == NULL || text[0] == '\0') return;
-        enter_syscall(SXAH_WRITE_CONSOLE, (uint64_t)text, 0, 0, 0, 0, 0);
+        /* getty is the terminal owner; p_xapi_output_kernel renders owner
+         * output directly to the console instead of its xtttp buffer. */
+        xapi_Printf("%s", text);
 }
 
 static void feed_line(const char *line, size_t length)
@@ -75,27 +77,26 @@ int getty_run_session(const char *shell, WSTR envp[])
                 if ((input_status & XTTTP_INPUT_STATUS_WAITING) != 0) {
                         int no_echo = (input_status & XTTTP_INPUT_STATUS_NO_ECHO) != 0;
 
-                        for (;;) {
-                                int64_t ch = (int64_t)enter_syscall(SXAH_GETCH_TRY,
-                                                                    0, 0, 0, 0, 0, 0);
-                                if (ch < 0) break;
+                        /* Blocking read: the shell is waiting for a line, so
+                         * there is no pending output to drain until this key
+                         * is handled (one key per loop keeps echo responsive). */
+                        char ch = xapi_Getch();
 
-                                if (ch == '\n' || ch == '\r') {
-                                        if (!no_echo) console_write("\n");
-                                        feed_line(line, length);
-                                        length = 0;
-                                } else if (ch == '\b' || ch == 127) {
-                                        if (length > 0) {
-                                                length--;
-                                                if (!no_echo) console_write("\b \b");
-                                        }
-                                } else if (ch >= 32 && ch < 127) {
-                                        if (length < sizeof(line) - 1) {
-                                                line[length++] = (char)ch;
-                                                if (!no_echo) {
-                                                        char echo[2] = { (char)ch, '\0' };
-                                                        console_write(echo);
-                                                }
+                        if (ch == '\n' || ch == '\r') {
+                                if (!no_echo) console_write("\n");
+                                feed_line(line, length);
+                                length = 0;
+                        } else if (ch == '\b' || ch == 127) {
+                                if (length > 0) {
+                                        length--;
+                                        if (!no_echo) console_write("\b \b");
+                                }
+                        } else if (ch >= 32 && ch < 127) {
+                                if (length < sizeof(line) - 1) {
+                                        line[length++] = ch;
+                                        if (!no_echo) {
+                                                char echo[2] = { ch, '\0' };
+                                                console_write(echo);
                                         }
                                 }
                         }

@@ -14,6 +14,8 @@
 
 - 登录成功后不能直接 `execve(shell)`：先 `SXAH_MARK_IS_TERMINAL`，再 fork shell，
   父进程留在 `console_host.c` 的循环里。
-- 循环职责：`SXAH_READ_OUTPUT_BUFFER` → `SXAH_WRITE_CONSOLE` → `SXAH_UNLOCK_OUTPUT_LOCK`；
-  `SXAH_CHECK_INPUT_BUFFER` → `SXAH_GETCH_TRY` → `SXAH_WRITE_INPUT_BUFFER`。
+- 循环职责：`SXAH_READ_OUTPUT_BUFFER` → `xapi_Printf`（owner 输出直写 console）→
+  `SXAH_UNLOCK_OUTPUT_LOCK`；`SXAH_CHECK_INPUT_BUFFER` → `xapi_Getch` → 行编辑 →
+  `SXAH_WRITE_INPUT_BUFFER`。
+- 不新增内核原语；键盘字节由 `keyboard_dispatch_key_message()` 投递到 XTTTP sink。
 - `is_shell` 是 XTTTP 终端标记，不是“shell 身份”；getty 退出后由 rc respawn 清除。
