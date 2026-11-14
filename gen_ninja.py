@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent          # leopard-getty/
 OUT  = ROOT / "out"
 
-SOURCES = ["main.c", "console_host.c"]
+SOURCES = ["main.c"]
 TARGET  = OUT / "leopard-getty.elf"
 
 # XACT CRT（../XJ380-SDK/out/crt）：启动对象 + 静态运行时 + 分配器
@@ -20,10 +20,10 @@ CRT_LIBS = [LIB / "libxact.a", LIB / "liballoc.a"]
 # install/data 均为相对 / 的安装路径（无前导斜杠）
 PKG = {
     "pkgname": "leopard-getty",
-    "pkgver":  "1.0_3",
+    "pkgver":  "1.0_4",
     "arch":    "x86_64",
     "desc":    "Leopard login manager",
-    "deps":    "",
+    "deps":    "leopard-conhost>=1.0_1",
     "install": "apps/leopard/leopard-getty.elf",
     "data":    [],
 }
