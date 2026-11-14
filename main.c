@@ -1,5 +1,6 @@
 #include "xtuiapi.h"
 #include "libsys.h"   /* xapi_* / WSTR；libsys.h：enter_syscall */
+#include "console_host.h"
 
 /* XACT 2026v5 头文件删除了该宏，但内核 XAPI_INPUT 仍支持 flags=0x1（不回显）。 */
 #ifndef XAPI_INPUT_NO_ECHO
@@ -78,12 +79,11 @@ int main(int argc, char *argv[], char *envp[])
                 char shell[PATH_CAP];
                 resolve_shell(username, shell, sizeof(shell));
 
-                WSTR argv[2] = { (WSTR)shell, NULL };
                 WSTR envp[1] = { NULL };
-                xapi_Execve((WSTR)shell, argv, envp);
-
-                xapi_Printf("LeopardGetty: session start failed\n");
-                xapi_Sleep(2000);
+                if (getty_run_session(shell, envp) != 0) {
+                        xapi_Exit(1);
+                }
+                xapi_Exit(0);
         }
 }
 

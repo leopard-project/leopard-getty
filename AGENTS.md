@@ -9,3 +9,11 @@
 
 - 静态 ELF，依赖 `../XJ380-SDK/out/crt`（`include/` + `lib/x86_64/`）。
 - 读 `/users/<用户名>/config` 的 `shell=`（读不到回退 `DEFAULT_SHELL`），不再硬编码 shell 路径。
+
+## Console host
+
+- 登录成功后不能直接 `execve(shell)`：先 `SXAH_MARK_IS_TERMINAL`，再 fork shell，
+  父进程留在 `console_host.c` 的循环里。
+- 循环职责：`SXAH_READ_OUTPUT_BUFFER` → `SXAH_WRITE_CONSOLE` → `SXAH_UNLOCK_OUTPUT_LOCK`；
+  `SXAH_CHECK_INPUT_BUFFER` → `SXAH_GETCH_TRY` → `SXAH_WRITE_INPUT_BUFFER`。
+- `is_shell` 是 XTTTP 终端标记，不是“shell 身份”；getty 退出后由 rc respawn 清除。
