@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent          # leopard-getty/
 OUT  = ROOT / "out"
 
-SOURCES = ["main.c", "console_lock.c"]
+SOURCES = ["main.c"]
 TARGET  = OUT / "leopard-getty.elf"
 
 # XACT CRT（../XJ380-SDK/out/crt）：启动对象 + 静态运行时 + 分配器

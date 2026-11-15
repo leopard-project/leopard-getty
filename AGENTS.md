@@ -12,7 +12,8 @@
 
 ## Logon only
 
+- 启动链：`rc → conhost → getty → shell`。getty 运行在 conhost 的 PTY slave 上。
 - getty 只负责 OOBE/认证/读取 `shell=`，不拥有 console。
-- 登录成功后 `execve("/apps/leopard/leopard-conhost.elf", {shell}, NULL)`。
-- `SXAH_MARK_IS_TERMINAL`、XTTTP 输入输出循环都在 `leopard-conhost`。
-- 不要把 console host 逻辑重新塞回 getty。
+- 输入输出使用 fd 0/1/2；密码用 `TCGETS/TCSETS` 关闭 `ECHO`，不再用 `XAPI_INPUT`。
+- 登录成功后 `execve(shell)`，shell 继承同一个 PTY。
+- console/VT/fb 逻辑都在 `leopard-conhost`；不要把 console host 塞回 getty。
