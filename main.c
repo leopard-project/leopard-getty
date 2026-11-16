@@ -32,7 +32,7 @@
 #define ECHO 0000010
 #endif
 
-/* Matches OpenXSKernel/include/tty.h: struct termios. */
+/* Matches leopard-xsk/include/tty.h: struct termios. */
 struct getty_termios {
         uint32_t c_iflag;
         uint32_t c_oflag;
